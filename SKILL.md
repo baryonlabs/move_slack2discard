@@ -1,140 +1,151 @@
 ---
-name: slack-to-local
-description: Slack 워크스페이스 데이터를 로컬에 다운로드하고 LLM Wiki(Karpathy 스타일)로 검색하는 시스템. Slack Export ZIP → SQLite DB + FTS5 → 지능형 검색. Free 플랜용.
+name: slack-archive-search
+description: Slack 아카이브 검색 (LLM Wiki 스타일). Slack Export ZIP을 자동 처리하고 /search-slack 명령어로 메시지/이미지/첨부파일 검색.
 ---
 
-# Slack → Local 아카이브 + LLM Wiki 검색
+# Slack Archive Search Skill
 
-Slack 워크스페이스의 모든 데이터를 로컬에 다운로드하고, LLM Wiki 방식으로 검색 가능한 시스템입니다.
+사용자가 **"/search-slack <쿼리>"**, **"Slack 메시지 검색"**, **"과거 Slack 기록 찾아줘"** 등을 요청하면 이 스킬이 자동 실행됩니다.
 
-## 빠른 시작
+## 🎯 트리거 조건
 
-### 1. 환경 설정
+다음 중 하나라도 포함되면 스킬 실행:
+- `/search-slack <쿼리>`
+- `Slack 검색`, `Slack 아카이브`, `과거 Slack 메시지`
+- `Slack 파일 찾아줘`, `Slack 이미지 검색`
+
+## 📦 자동 설치 (최초 1회)
+
+데이터가 없으면 스킬이 자동으로 설치합니다:
+
 ```bash
-# 의존성 설치
+# 1. 리포지토리 클론
+[ -d /tmp/slack-archive ] || git clone https://github.com/baryonlabs/move_slack2discard.git /tmp/slack-archive
+cd /tmp/slack-archive
+
+# 2. 의존성 설치
 pip install -r requirements.txt
 
-# 환경 변수 설정
-cp .env.example .env
-# .env 파일 편집: SLACK_USER_TOKEN 추가
+# 3. 환경 변수 설정 안내
+echo "다음 단계: .env 파일에 SLACK_USER_TOKEN 입력하세요."
 ```
 
-### 2. Slack Export 다운로드
-```
-Slack Admin → Settings & Administration → Workspace settings
-→ Import/Export Data → Export → Start Export
-→ 범위: Public channels (Free 플랜)
-→ 날짜: 최근 3개월 단위 권장
-```
+## 🚀 실행 흐름
 
-### 3. 실행
+### 1. 데이터 확인
 ```bash
-# Phase 1 & 2: 다운로드 + SQLite 저장
+[ -f /tmp/slack-archive/data/archive.db ] && echo "DB_EXISTS" || echo "NO_DB"
+```
+
+### 2. 데이터 없을 때 (최초 실행)
+```bash
+# Slack Export ZIP 다운로드 안내
+echo "Slack Admin → Settings → Import/Export → Export → Public channels ZIP 다운로드"
+echo "ZIP 파일 경로를 알려주세요: /search-slack --init {ZIP_PATH}"
+
+# ZIP 받으면 자동 처리
+cd /tmp/slack-archive
+python agents/phase1_slack_exporter.py {ZIP_PATH}
 python agents/phase2_data_parser.py
-
-# 테스트용 Mock 데이터로 먼저 해보기 (Slack 데이터 없어도 가능)
-python agents/phase2_data_parser.py  # Mock 데이터 자동 생성됨
-
-# LLM Wiki 검색 (Karpathy 스타일)
-python agents/llm_wiki_search.py --interactive
 ```
 
-## LLM Wiki 검색 사용법
-
-### 대화형 모드 (추천)
+### 3. 검색 실행
 ```bash
-python agents/llm_wiki_search.py --interactive
+cd /tmp/slack-archive
+python agents/llm_wiki_search.py --search-slack "{쿼리}" --limit 10
 ```
 
-```
-======================================================
-Slack 아카이브 LLM Wiki 검색 (대화형 모드)
-======================================================
-명령어: /search <쿼리>, /stats, /quit
+## 📂 검색 결과 구조 (JSON)
 
-🔍 안녕하세요
-# Slack 아카이브 검색 결과
-> **검색어:** `안녕하세요`
-> **결과 수:** 1개
+`--search-slack` 모드 출력 예시:
+
+```json
+{
+  "query": "안녕하세요",
+  "count": 1,
+  "results": [
+    {
+      "channel": "general",
+      "user": "Martin Kim",
+      "timestamp": "2024-02-01 09:00",
+      "text": "안녕하세요! Slack 아카이브 시스템 테스트 중입니다.",
+      "files": [
+        {
+          "name": "test_document.pdf",
+          "size": 102400,
+          "local_path": "/tmp/slack-archive/data/files/F001/test_document.pdf"
+        },
+        {
+          "name": "image.png",
+          "size": 51200,
+          "local_path": "/tmp/slack-archive/data/files/F002/image.png"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## 🖼️ 이미지/첨부파일 조회
+
+### 로컬 경로로 바로 접근
+검색 결과의 `files[].local_path`를 사용:
+```bash
+open /tmp/slack-archive/data/files/F002/image.png
+```
+
+### 이미지 미리보기 (Claude Code 내)
+```bash
+# 작은 이미지(<1MB)는 base64로 인코딩해서 표시 가능
+python -c "import base64; print(base64.b64encode(open('/tmp/slack-archive/data/files/F002/image.png','rb').read()).decode())"
+```
+
+## 🔄 지속적 업데이트
+```
+/search-slack --update ./new_slack.zip
+```
+→ 자동으로 기존 DB에 병합 (INSERT OR IGNORE)
+
+## 💡 사용 예시
+
+### 예시 1: 기본 검색
+```
+/search-slack "안녕하세요"
+```
+→ 최근 10개 결과 반환 (JSON)
+
+### 예시 2: 첨부파일 있는 메시지만
+```
+/search-slack "디자인 검토" --has-files
+```
+→ `files` 배열이 비어있지 않은 결과만 필터링
+
+### 예시 3: 대화형 모드
+```
+/search-slack --interactive
+```
+→ REPL 형태로 계속 검색
+
+### 예시 4: LLM 요약
+```
+/search-slack "프로젝트 진행상황" --llm
+```
+→ Claude/AI가 결과를 요약해서 설명 (ANTHROPIC_API_KEY 필요)
+
+## ⚠️ 문제 해결
+
+| 문제 | 해결 방법 |
+|---|---|
+| DB 없음 | `Slack Export ZIP 다운로드 후 /search-slack --init {ZIP_PATH}` |
+| 이미지 안 보임 | `ls /tmp/slack-archive/data/files/` 확인, Phase 1 재실행 |
+| 검색 결과 없음 | `"안녕"*` prefix 검색 시도 |
+| 데이터 업데이트 | `/search-slack --update ./new.zip` |
+
+## 🔒 보안
+- `.env`는 절대 공유 금지
+- 토큰은 하드코딩하지 않음
+- 모든 데이터는 로컬 저장
+
 ---
-## 1. general | Martin Kim | 2024-02-01 09:00
-```
-안녕하세요! Slack 아카이브 시스템 테스트 중입니다.
-```
----
-```
 
-### 1회 검색
-```bash
-# 기본 검색
-python agents/llm_wiki_search.py "안녕하세요"
-
-# prefix 검색 (한국어 지원)
-python agents/llm_wiki_search.py "안녕"
-
-# 채널 필터
-python agents/llm_wiki_search.py "테스트" --channel general
-
-# LLM 요약과 함께 (ANTHROPIC_API_KEY 필요)
-python agents/llm_wiki_search.py "Slack" --llm
-```
-
-## 지속적 업데이트 (3개월마다)
-
-```bash
-# 새 ZIP 다운로드 후
-python agents/phase1_slack_exporter.py ./slack_new.zip
-python agents/phase2_data_parser.py
-# → 자동으로 기존 DB에 병합 (INSERT OR IGNORE)
-```
-
-## 기능
-
-- ✅ Slack Export ZIP → 로컬 다운로드
-- ✅ SQLite + FTS5 전문 검색 (한국어 지원)
-- ✅ LLM Wiki 검색 (Karpathy 스타일)
-- ✅ 3개월마다 다운로드 → 자동 병합
-- ✅ 대화형 검색 모드
-- ✅ LLM 요약 (선택적)
-
-## 파일 구조
-
-```
-project/
-├── .env                    # 환경 변수
-├── requirements.txt
-├── README.md
-├── data/
-│   ├── archive.db          # SQLite DB (FTS5 인덱스 포함)
-│   ├── files/              # 다운로드된 Slack 파일
-│   └── slack_export/       # Slack ZIP 압축 해제 경로
-├── agents/
-│   ├── phase1_slack_exporter.py   # Slack 파일 다운로드
-│   ├── phase2_data_parser.py     # SQLite 파싱 & 저장
-│   ├── llm_wiki_search.py        # LLM Wiki 검색 (Karpathy 스타일)
-│   └── utils/
-│       ├── db.py
-│       ├── schema.sql
-│       ├── rate_limiter.py
-│       └── progress_tracker.py
-└── tests/
-    └── test_each_phase.py
-```
-
-## 한국어 검색 팁
-
-- SQLite FTS5 unicode61 토크나이저 사용
-- `"안녕"*` 형태로 prefix 검색 가능
-- 정확한 문구는 따옴표로 검색: `"안녕하세요"`
-
-## 문제 해결
-
-- **FTS 검색 결과 없음**: `"` 따옴표 없이 검색하거나 `*` prefix 사용
-- **DB 잠금**: `rm data/archive.db-wal data/archive.db-shm`
-- **파일 다운로드 실패**: `data/progress/failed_files.json` 확인
-
-## 보안
-
-- ✅ .env는 .gitignore에 포함됨
-- ✅ data/ 디렉토리는 .gitignore에 포함됨
-- ✅ 토큰 하드코딩 금지
+*Slack Archive Search Skill | Baryon Labs*

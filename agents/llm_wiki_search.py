@@ -29,6 +29,19 @@ def format_timestamp(ts: float) -> str:
     except:
         return "날짜 불명"
 
+def get_files_for_message(message_id: str) -> list[dict]:
+    """특정 메시지의 첨부파일 목록 반환"""
+    db = get_db()
+    rows = db.execute("""
+        SELECT name, size, local_path FROM files WHERE message_id = ?
+    """, (message_id,)).fetchall()
+    db.close()
+    return [{"name": r["name"], "size": r["size"], "local_path": r["local_path"]} for r in rows]
+
+def has_files(message_id: str) -> bool:
+    """메시지에 첨부파일이 있는지 확인"""
+    return len(get_files_for_message(message_id)) > 0
+
 def search_messages(query: str, limit: int = 10, channel: str = None):
     """
     FTS5 전문 검색 수행 (Karpathy 스타일: 빠르고 정확한 1차 검색)
@@ -227,10 +240,51 @@ def main():
     parser.add_argument("--channel", help="채널로 필터링")
     parser.add_argument("--interactive", "-i", action="store_true", help="대화형 모드")
     parser.add_argument("--llm", action="store_true", help="LLM으로 요약 생성")
+    parser.add_argument("--search-slack", action="store_true", help="Skill 모드: 구조화된 JSON 출력")
+    parser.add_argument("--has-files", action="store_true", help="첨부파일 있는 메시지만")
     args = parser.parse_args()
 
     if not DB_PATH.exists():
-        print("❌ archive.db가 없습니다. 먼저 Phase 2를 실행하세요.")
+        if args.search_slack:
+            # Skill 모드: 자동 안내
+            print(json.dumps({
+                "status": "no_data",
+                "message": "Slack 아카이브 데이터가 없습니다.",
+                "steps": [
+                    "1. Slack Admin → Settings → Import/Export → Export → Public channels ZIP 다운로드",
+                    "2. ZIP 파일 경로를 알려주세요.",
+                    "3. 자동으로 Phase1 & 2를 실행합니다."
+                ]
+            }, ensure_ascii=False, indent=2))
+            return
+        else:
+            print("❌ archive.db가 없습니다. 먼저 Phase 2를 실행하세요.")
+            return
+
+    if args.search_slack:
+        # Skill 모드: JSON 출력
+        results = search_messages(args.query, limit=args.limit, channel=args.channel)
+        if args.has_files:
+            results = [r for r in results if has_files(r["id"])]
+        
+        output = {
+            "query": args.query,
+            "count": len(results),
+            "results": []
+        }
+        for row in results:
+            files = get_files_for_message(row["id"])
+            output["results"].append({
+                "channel": row["channel_name"],
+                "user": row["user_name"] or row["user_handle"],
+                "timestamp": format_timestamp(row["ts"]),
+                "text": row["text"][:500],
+                "files": [
+                    {"name": f["name"], "size": f["size"], "local_path": f["local_path"]}
+                    for f in files
+                ]
+            })
+        print(json.dumps(output, ensure_ascii=False, indent=2))
         return
 
     if args.interactive:
