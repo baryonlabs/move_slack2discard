@@ -8,12 +8,14 @@ from dotenv import load_dotenv
 from utils.progress_tracker import ProgressTracker
 from utils.rate_limiter import RateLimiter
 
-load_dotenv()
+# 스크립트 위치 기준으로 기본 경로 설정
+SCRIPT_DIR = Path(__file__).parent.parent  # plugins/slack-archive-search/
+load_dotenv(SCRIPT_DIR / ".env")
 
 SLACK_USER_TOKEN = os.getenv("SLACK_USER_TOKEN")
-FILES_DIR = Path(os.getenv("FILES_DIR", "./data/files"))
-EXPORT_DIR = Path(os.getenv("DATA_DIR", "./data")) / "slack_export"
-PROGRESS_DIR = Path(os.getenv("DATA_DIR", "./data")) / "progress"
+FILES_DIR = Path(os.getenv("FILES_DIR", SCRIPT_DIR / "data" / "files"))
+EXPORT_DIR = Path(os.getenv("DATA_DIR", SCRIPT_DIR / "data")) / "slack_export"
+PROGRESS_DIR = Path(os.getenv("DATA_DIR", SCRIPT_DIR / "data")) / "progress"
 
 # Rate Limiter 설정: Slack API는 Tier별로 다름
 # Tier 1: 1 req/min, Tier 2: 20 req/min, Tier 3: 50 req/min, Tier 4: 100 req/min

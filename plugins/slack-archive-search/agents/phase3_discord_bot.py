@@ -20,12 +20,14 @@ from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
 
-load_dotenv()
+# 스크립트 위치 기준으로 기본 경로 설정
+SCRIPT_DIR = Path(__file__).parent.parent  # plugins/slack-archive-search/
+load_dotenv(SCRIPT_DIR / ".env")
 
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 DISCORD_GUILD_ID = int(os.getenv("DISCORD_GUILD_ID", "0"))
-DB_PATH = Path(os.getenv("DB_PATH", "./data/archive.db"))
-FILES_DIR = Path(os.getenv("FILES_DIR", "./data/files"))
+DB_PATH = Path(os.getenv("DB_PATH", SCRIPT_DIR / "data" / "archive.db"))
+FILES_DIR = Path(os.getenv("FILES_DIR", SCRIPT_DIR / "data" / "files"))
 
 MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024  # 25MB Discord 제한
 MAX_SEARCH_RESULTS = 10

@@ -10,11 +10,13 @@ from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
-load_dotenv()
+# 스크립트 위치 기준으로 기본 경로 설정
+SCRIPT_DIR = Path(__file__).parent.parent  # plugins/slack-archive-search/
+load_dotenv(SCRIPT_DIR / ".env")
 
-DB_PATH = Path(os.getenv("DB_PATH", "./data/archive.db"))
-EXPORT_DIR = Path(os.getenv("DATA_DIR", "./data")) / "slack_export"
-FILES_DIR = Path(os.getenv("FILES_DIR", "./data/files"))
+DB_PATH = Path(os.getenv("DB_PATH", SCRIPT_DIR / "data" / "archive.db"))
+EXPORT_DIR = Path(os.getenv("DATA_DIR", SCRIPT_DIR / "data")) / "slack_export"
+FILES_DIR = Path(os.getenv("FILES_DIR", SCRIPT_DIR / "data" / "files"))
 
 
 def get_db() -> sqlite3.Connection:
