@@ -7,14 +7,16 @@ LLM Wiki Search (Karpathy 스타일)
   python agents/llm_wiki_search.py --query "안녕하세요" --limit 5
   python agents/llm_wiki_search.py --interactive  # 대화형 모드
 """
-import os, sqlite3, argparse, json
+import os, sys, sqlite3, argparse, json
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
 
-load_dotenv()
+# 스크립트 위치 기준으로 기본 경로 설정
+SCRIPT_DIR = Path(__file__).parent.parent  # plugins/slack-archive-search/
+load_dotenv(SCRIPT_DIR / ".env")
 
-DB_PATH = Path(os.getenv("DB_PATH", "./data/archive.db"))
+DB_PATH = Path(os.getenv("DB_PATH", SCRIPT_DIR / "data" / "archive.db"))
 LLM_API_KEY = os.getenv("ANTHROPIC_API_KEY") or os.getenv("OPENAI_API_KEY")
 LLM_PROVIDER = "anthropic" if os.getenv("ANTHROPIC_API_KEY") else "openai" if os.getenv("OPENAI_API_KEY") else None
 
