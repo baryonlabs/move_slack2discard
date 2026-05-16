@@ -1,39 +1,45 @@
-# Slack → Local 아카이브 + LLM Wiki 검색
+# 🛠️ Claude Code 스킬로 설치하고 사용하기
 
-> **⚡ Claude Code 스킬로 설치하고 바로 사용하세요!**
-
-## 🚀 Claude Code 스킬로 설치하기 (추천)
-
-### 1. 스킬 설치
+## 1️⃣ 스킬 설치 (1회만)
 ```bash
-# 리포지토리 클론
+# 리포지토리 클론하여 스킬 폴더에 넣기
 git clone https://github.com/baryonlabs/move_slack2discard.git ~/.claude/skills/slack-archive-search
-```
-
-### 2. 환경 설정
-```bash
 cd ~/.claude/skills/slack-archive-search
+
+# 의존성 설치
 pip install -r requirements.txt
+
+# 환경 변수 설정
 cp .env.example .env
-# .env 편집하여 SLACK_USER_TOKEN 입력
+# .env 파일 열어서 SLACK_USER_TOKEN 입력
 ```
 
-### 3. 스킬 사용 (Claude Code에서)
+## 2️⃣ Slack 데이터 준비
 ```
-# Slack 검색
+Slack Admin → Settings & Administration → Workspace settings
+→ Import/Export Data → Export → Public channels ZIP 다운로드
+```
+
+## 3️⃣ Claude Code에서 바로 사용!
+```
+# 검색
 /search-slack "안녕하세요"
 
 # 대화형 모드
 /search-slack --interactive
 
-# 이미지/첨부파일과 함께
-/search-slack "디자인 검토" --has-files
+# 첨부파일(이미지/문서) 포함 메시지만
+/search-slack "디자인" --has-files
 
 # 새 데이터 업데이트
 /search-slack --update ./new_slack.zip
 ```
 
 ---
+
+# Slack → Local 아카이브 + LLM Wiki 검색
+
+Slack 워크스페이스의 **모든 데이터(메시지, 파일, 이미지)**를 로컬에 다운로드하고, LLM Wiki(Karpathy 스타일)로 검색하는 시스템입니다.
 
 ## ✨ 주요 기능
 
@@ -46,34 +52,7 @@ cp .env.example .env
 
 ---
 
-## 📦 스킬로 설치하기 (추천)
-
-### 1. 리포지토리 클론
-```bash
-git clone https://github.com/baryonlabs/move_slack2discard.git
-cd move_slack2discard
-```
-
-### 2. 의존성 설치
-```bash
-pip install -r requirements.txt
-```
-
-### 3. 환경 변수 설정
-```bash
-cp .env.example .env
-# .env 파일 열어서 SLACK_USER_TOKEN 입력
-```
-
-### 4. 스킬 인식 확인
-Claude Code에서 다음 명령어로 스킬이 인식되는지 확인:
-```
-/search-slack --help
-```
-
----
-
-## 🚀 빠른 시작 (Mock 데이터로 테스트)
+## 📦 빠른 시작 (Mock 데이터로 테스트)
 
 Slack 데이터 없이도 **지금 바로 테스트** 가능합니다:
 
@@ -122,6 +101,7 @@ python agents/llm_wiki_search.py "안녕하세요"
 python agents/llm_wiki_search.py --interactive
 ```
 
+출력 예시:
 ```
 ======================================================
 Slack 아카이브 LLM Wiki 검색 (대화형 모드)
@@ -130,20 +110,17 @@ Slack 아카이브 LLM Wiki 검색 (대화형 모드)
 
 🔍 안녕하세요
 # Slack 아카이브 검색 결과
-> **검색어:** `안녕하세요`
+> **쿼리:** `안녕하세요`
 > **결과 수:** 1개
 ---
 ## 1. general | Martin Kim | 2024-02-01 09:00
 ```
 안녕하세요! Slack 아카이브 시스템 테스트 중입니다.
 ```
-
-**첨부파일 정보 표시:**
-검색 결과에 자동으로 첨부파일(이미지, 문서 등) 정보가 표시됩니다:
-```
-**첨부 파일:**
+**첨부파일:**
   - test_document.pdf (102400 bytes)
   - image.png (51200 bytes)
+---
 ```
 
 **LLM 요약과 함께:**
@@ -184,7 +161,7 @@ image.png|data/files/F002/image.png
 ```
 
 ### 검색 시 자동 표시
-LLM Wiki 검색 시 첨부파일 정보가 자동으로 포함됩니다.
+LLM Wiki 검색 시 첨부파일(이미지, 문서 등) 정보가 자동으로 포함됩니다.
 
 ---
 
@@ -209,7 +186,7 @@ LLM Wiki 검색 시 첨부파일 정보가 자동으로 포함됩니다.
 
 **업데이트:**
 ```
-/search-slack --update ./new_slack_export.zip
+/search-slack --update ./new_slack.zip
 ```
 
 ---
@@ -244,7 +221,7 @@ project/
 
 ---
 
-## 🇰🇷 한국어 검색 팁
+## 🇰🇰 한국어 검색 팁
 
 - SQLite FTS5 `unicode61` 토크나이저 사용
 - `"안녕"*` 형태로 prefix 검색 가능
@@ -259,7 +236,7 @@ project/
 | FTS 검색 결과 없음 | `"` 따옴표 없이 검색하거나 `*` prefix 사용 |
 | DB 잠금 | `rm data/archive.db-wal data/archive.db-shm` |
 | 파일 다운로드 실패 | `data/progress/failed_files.json` 확인 |
-| 이미지가 안 보임 | `data/files/` 폴더 확인, Phase 1 재실행 |
+| 이미지 안 보임 | `data/files/` 폴더 확인, Phase 1 재실행 |
 
 ---
 
