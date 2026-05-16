@@ -1,6 +1,39 @@
 # Slack → Local 아카이브 + LLM Wiki 검색
 
-Slack 워크스페이스의 **모든 데이터(메시지, 파일, 이미지)**를 로컬에 다운로드하고, LLM Wiki(Karpathy 스타일)로 검색하는 시스템입니다.
+> **⚡ Claude Code 스킬로 설치하고 바로 사용하세요!**
+
+## 🚀 Claude Code 스킬로 설치하기 (추천)
+
+### 1. 스킬 설치
+```bash
+# 리포지토리 클론
+git clone https://github.com/baryonlabs/move_slack2discard.git ~/.claude/skills/slack-archive-search
+```
+
+### 2. 환경 설정
+```bash
+cd ~/.claude/skills/slack-archive-search
+pip install -r requirements.txt
+cp .env.example .env
+# .env 편집하여 SLACK_USER_TOKEN 입력
+```
+
+### 3. 스킬 사용 (Claude Code에서)
+```
+# Slack 검색
+/search-slack "안녕하세요"
+
+# 대화형 모드
+/search-slack --interactive
+
+# 이미지/첨부파일과 함께
+/search-slack "디자인 검토" --has-files
+
+# 새 데이터 업데이트
+/search-slack --update ./new_slack.zip
+```
+
+---
 
 ## ✨ 주요 기능
 
