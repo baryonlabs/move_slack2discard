@@ -1,0 +1,15 @@
+{
+  "name": "slack-archive-search",
+  "owner": {
+    "name": "baryonlabs",
+    "url": "https://github.com/baryonlabs"
+  },
+  "description": "Slack 아카이브 검색 (LLM Wiki 스타일). Slack Export ZIP을 자동 처리하고 /search-slack 명령어로 메시지/이미지/첨부파일 검색.",
+  "plugins": [
+    {
+      "name": "slack-archive-search",
+      "description": "Slack 아카이브 검색 (LLM Wiki 스타일). Slack Export ZIP → SQLite DB + FTS5 → 지능형 검색. 이미지/첨부파일 모두 다운로드 및 조회.",
+      "source": "./plugins/slack-archive-search"
+    }
+  ]
+}

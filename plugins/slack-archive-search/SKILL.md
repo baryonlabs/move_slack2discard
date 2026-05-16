@@ -19,22 +19,22 @@ description: Slack 아카이브 검색 (LLM Wiki 스타일). Slack Export ZIP을
 데이터가 없으면 스킬이 자동으로 설치합니다:
 
 ```bash
-# 1. 리포지토리 클론
-[ -d /tmp/slack-archive ] || git clone https://github.com/baryonlabs/move_slack2discard.git /tmp/slack-archive
-cd /tmp/slack-archive
+# 1. 플러그인 설치 확인
+[ -d ~/.claude/plugins/slack-archive-search ] || echo "NEED_INSTALL"
 
-# 2. 의존성 설치
-pip install -r requirements.txt
-
-# 3. 환경 변수 설정 안내
-echo "다음 단계: .env 파일에 SLACK_USER_TOKEN 입력하세요."
+# 2. 설치 안 되어 있으면 안내
+if [ ! -d ~/.claude/plugins/slack-archive-search ]; then
+  echo "플러그인 설치 필요: /plugin marketplace add baryonlabs/move_slack2discard && /plugin install slack-archive-search"
+fi
 ```
 
 ## 🚀 실행 흐름
 
 ### 1. 데이터 확인
 ```bash
-[ -f /tmp/slack-archive/data/archive.db ] && echo "DB_EXISTS" || echo "NO_DB"
+# 플러그인 디렉토리 확인
+PLUGIN_DIR=~/.claude/plugins/slack-archive-search
+[ -f "$PLUGIN_DIR/data/archive.db" ] && echo "DB_EXISTS" || echo "NO_DB"
 ```
 
 ### 2. 데이터 없을 때 (최초 실행)
@@ -44,14 +44,14 @@ echo "Slack Admin → Settings → Import/Export → Export → Public channels 
 echo "ZIP 파일 경로를 알려주세요: /search-slack --init {ZIP_PATH}"
 
 # ZIP 받으면 자동 처리
-cd /tmp/slack-archive
+cd ~/.claude/plugins/slack-archive-search
 python agents/phase1_slack_exporter.py {ZIP_PATH}
 python agents/phase2_data_parser.py
 ```
 
 ### 3. 검색 실행
 ```bash
-cd /tmp/slack-archive
+cd ~/.claude/plugins/slack-archive-search
 python agents/llm_wiki_search.py --search-slack "{쿼리}" --limit 10
 ```
 
@@ -73,12 +73,7 @@ python agents/llm_wiki_search.py --search-slack "{쿼리}" --limit 10
         {
           "name": "test_document.pdf",
           "size": 102400,
-          "local_path": "/tmp/slack-archive/data/files/F001/test_document.pdf"
-        },
-        {
-          "name": "image.png",
-          "size": 51200,
-          "local_path": "/tmp/slack-archive/data/files/F002/image.png"
+          "local_path": "/path/to/data/files/F001/test_document.pdf"
         }
       ]
     }
@@ -91,13 +86,7 @@ python agents/llm_wiki_search.py --search-slack "{쿼리}" --limit 10
 ### 로컬 경로로 바로 접근
 검색 결과의 `files[].local_path`를 사용:
 ```bash
-open /tmp/slack-archive/data/files/F002/image.png
-```
-
-### 이미지 미리보기 (Claude Code 내)
-```bash
-# 작은 이미지(<1MB)는 base64로 인코딩해서 표시 가능
-python -c "import base64; print(base64.b64encode(open('/tmp/slack-archive/data/files/F002/image.png','rb').read()).decode())"
+open ~/.claude/plugins/slack-archive-search/data/files/F002/image.png
 ```
 
 ## 🔄 지속적 업데이트
@@ -137,7 +126,7 @@ python -c "import base64; print(base64.b64encode(open('/tmp/slack-archive/data/f
 | 문제 | 해결 방법 |
 |---|---|
 | DB 없음 | `Slack Export ZIP 다운로드 후 /search-slack --init {ZIP_PATH}` |
-| 이미지 안 보임 | `ls /tmp/slack-archive/data/files/` 확인, Phase 1 재실행 |
+| 이미지 안 보임 | `ls ~/.claude/plugins/slack-archive-search/data/files/` 확인, Phase 1 재실행 |
 | 검색 결과 없음 | `"안녕"*` prefix 검색 시도 |
 | 데이터 업데이트 | `/search-slack --update ./new.zip` |
 
